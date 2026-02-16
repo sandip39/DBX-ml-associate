@@ -1,0 +1,24 @@
+# 1. Define the Service Principal
+resource "databricks_service_principal" "scoring_app" {
+  application_id = "your-app-id-here"
+  display_name   = "Wine Quality Scoring App"
+}
+
+# 2. Grant 'CAN QUERY' permissions on the Serving Endpoint
+resource "databricks_permissions" "endpoint_usage" {
+  serving_endpoint_id = databricks_model_serving.wine_endpoint.serving_endpoint_id
+
+  access_control {
+    service_principal_name = databricks_service_principal.scoring_app.application_id
+    permission_level       = "CAN_QUERY"
+  }
+}
+
+# 3. Grant Unity Catalog Model Permissions
+resource "databricks_grants" "model_access" {
+  model = "main.default.wine_quality_xgboost"
+  grant {
+    principal  = databricks_service_principal.scoring_app.application_id
+    privileges = ["EXECUTE"]
+  }
+}
